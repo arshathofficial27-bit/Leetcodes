@@ -1,0 +1,29 @@
+import java.util.HashMap;
+import java.util.Map;
+
+class Solution {
+    public int lengthOfLongestSubstring(String s) {
+        if (s == null || s.length() == 0) {
+            return 0;
+        }
+
+        Map<Character, Integer> lastIndex = new HashMap<>();
+        int maxLength = 0;
+        int windowStart = 0;
+
+        for (int windowEnd = 0; windowEnd < s.length(); windowEnd++) {
+            char currentChar = s.charAt(windowEnd);
+
+            // If character seen before AND its last occurrence is within current window
+            if (lastIndex.containsKey(currentChar) && lastIndex.get(currentChar) >= windowStart) {
+                // Move window start to just after the previous occurrence
+                windowStart = lastIndex.get(currentChar) + 1;
+            }
+
+            lastIndex.put(currentChar, windowEnd);
+            maxLength = Math.max(maxLength, windowEnd - windowStart + 1);
+        }
+
+        return maxLength;
+    }
+}
