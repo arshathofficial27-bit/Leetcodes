@@ -1,0 +1,64 @@
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+class DiningPhilosophers {
+    
+    // Only allow 4 philosophers to try eating at the same time,
+    // guaranteeing at least one can get both forks -> avoids deadlock
+    private final Semaphore eatLimiter = new Semaphore(4);
+    
+    // One lock per fork (5 forks for 5 philosophers)
+    private final Lock[] forks = new Lock[5];
+    
+    public DiningPhilosophers() {
+        for (int i = 0; i < 5; i++) {
+            forks[i] = new ReentrantLock();
+        }
+    }
+
+    // philosopher id 0..4
+    public void wantsToEat(int philosopher,
+                            Runnable pickLeftFork,
+                            Runnable pickRightFork,
+                            Runnable eat,
+                            Runnable putLeftFork,
+                            Runnable putRightFork) throws InterruptedException {
+        
+        int leftFork = philosopher;
+        int rightFork = (philosopher + 4) % 5;
+        
+        // Limit concurrency to avoid circular wait (deadlock)
+        eatLimiter.acquire();
+        try {
+            // Lock forks in a fixed global order (smaller index first)
+            // to avoid two philosophers deadlocking on each other's fork
+            Lock first = forks[Math.min(leftFork, rightFork)];
+            Lock second = forks[Math.max(leftFork, rightFork)];
+            
+            first.lock();
+            second.lock();
+            
+            try {
+                // Pick up left fork
+                pickLeftFork.run();
+                // Pick up right fork
+                pickRightFork.run();
+                
+                // Eat
+                eat.run();
+                
+                // Put down forks
+                putLeftFork.run();
+                putRightFork.run();
+                
+            } finally {
+                first.unlock();
+                second.unlock();
+            }
+            
+        } finally {
+            eatLimiter.release();
+        }
+    }
+}
